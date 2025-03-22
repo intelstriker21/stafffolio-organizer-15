@@ -11,6 +11,8 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/co
 import { Trash2, PlusCircle, Users, Trophy, ExternalLink, FolderPlus, Lock, UserCog, ShieldCheck, Moon, Sun, Server, Globe, Bug, ShieldAlert, Headphones, UsersRound } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { Switch } from "@/components/ui/switch";
+import { verifyPassword } from "@/utils/passwordUtils";
+import { ADMIN_PASSWORD_HASH } from "@/utils/secureStorage";
 
 interface StaffMember {
   id: number;
@@ -26,7 +28,6 @@ interface StaffMember {
 }
 
 interface AdminCredentials {
-  password: string;
   isLoggedIn: boolean;
 }
 
@@ -155,9 +156,8 @@ const Index = () => {
     }
   ]);
 
-  // Admin authentication state
+  // Admin authentication state - no longer storing password
   const [admin, setAdmin] = useState<AdminCredentials>({
-    password: "admin123", // In a real app, you would store this securely
     isLoggedIn: false
   });
 
@@ -254,10 +254,10 @@ const Index = () => {
     }
   };
 
-  // Handle admin login
+  // Handle admin login with secure password verification
   const handleLogin = () => {
-    if (loginPassword === admin.password) {
-      setAdmin({ ...admin, isLoggedIn: true });
+    if (verifyPassword(loginPassword, ADMIN_PASSWORD_HASH)) {
+      setAdmin({ isLoggedIn: true });
       setShowAuthDialog(false);
       setLoginPassword("");
       setAuthError("");
@@ -273,7 +273,7 @@ const Index = () => {
 
   // Handle admin logout
   const handleLogout = () => {
-    setAdmin({ ...admin, isLoggedIn: false });
+    setAdmin({ isLoggedIn: false });
     
     toast({
       title: "Logged out",
@@ -285,7 +285,7 @@ const Index = () => {
   useEffect(() => {
     const savedLoginStatus = localStorage.getItem("adminLoggedIn");
     if (savedLoginStatus === "true") {
-      setAdmin(prev => ({ ...prev, isLoggedIn: true }));
+      setAdmin({ isLoggedIn: true });
     }
   }, []);
 
@@ -773,10 +773,4 @@ const Index = () => {
 const Label = ({ children, htmlFor }: { children: React.ReactNode; htmlFor?: string }) => (
   <label 
     htmlFor={htmlFor} 
-    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-  >
-    {children}
-  </label>
-);
-
-export default Index;
+    className="text
