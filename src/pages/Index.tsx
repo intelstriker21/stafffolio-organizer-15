@@ -9,10 +9,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
-import { Trash2, PlusCircle, Users, Trophy, ExternalLink, FolderPlus, Lock, UserCog, ShieldCheck } from "lucide-react";
-import { useForm, FormProvider, Controller } from "react-hook-form";
-import { Form, FormControl, FormField, FormItem, FormLabel } from "@/components/ui/form";
+import { Trash2, PlusCircle, Users, Trophy, ExternalLink, FolderPlus, Lock, UserCog, ShieldCheck, Moon, Sun, Server, Globe, Bug, ShieldAlert, Headphones, UsersRound } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
+import { Switch } from "@/components/ui/switch";
 
 interface StaffMember {
   id: number;
@@ -23,6 +22,7 @@ interface StaffMember {
   bio: string;
   rank: string;
   folder: string;
+  department: "SUPPORT TEAM" | "BUG HUNTERS" | "SYSTEM ADMIN" | "MARKETING TEAM" | "SYSTEM ADMINS" | "ALL STAFF";
   projectUrl?: string;
 }
 
@@ -31,7 +31,55 @@ interface AdminCredentials {
   isLoggedIn: boolean;
 }
 
+const getDepartmentIcon = (department: string) => {
+  switch (department) {
+    case "SUPPORT TEAM":
+      return <Headphones size={18} className="mr-2" />;
+    case "BUG HUNTERS":
+      return <Bug size={18} className="mr-2" />;
+    case "SYSTEM ADMIN":
+      return <Server size={18} className="mr-2" />;
+    case "SYSTEM ADMINS":
+      return <ShieldAlert size={18} className="mr-2" />;
+    case "MARKETING TEAM":
+      return <Globe size={18} className="mr-2" />;
+    case "ALL STAFF":
+      return <UsersRound size={18} className="mr-2" />;
+    default:
+      return <Users size={18} className="mr-2" />;
+  }
+};
+
 const Index = () => {
+  // Theme state
+  const [theme, setTheme] = useState<'light' | 'dark'>(() => {
+    if (typeof window !== 'undefined') {
+      const savedTheme = localStorage.getItem("theme") as 'light' | 'dark';
+      return savedTheme || 'light';
+    }
+    return 'light';
+  });
+
+  const toggleTheme = () => {
+    const newTheme = theme === 'light' ? 'dark' : 'light';
+    setTheme(newTheme);
+    localStorage.setItem("theme", newTheme);
+    
+    if (newTheme === "dark") {
+      document.documentElement.classList.add("dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+    }
+  };
+
+  useEffect(() => {
+    if (theme === "dark") {
+      document.documentElement.classList.add("dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+    }
+  }, [theme]);
+  
   // Staff members state with enhanced data
   const [staff, setStaff] = useState<StaffMember[]>([
     {
@@ -43,6 +91,7 @@ const Index = () => {
       bio: "Passionate about creating beautiful user interfaces and delivering exceptional user experiences. Specializes in React and modern CSS.",
       rank: "Senior",
       folder: "Development",
+      department: "SUPPORT TEAM",
       projectUrl: "https://example.com/project1"
     },
     {
@@ -54,6 +103,7 @@ const Index = () => {
       bio: "Experienced in building scalable backend solutions with Node.js and MongoDB. Loves solving complex problems and optimizing performance.",
       rank: "Lead",
       folder: "Development",
+      department: "BUG HUNTERS",
       projectUrl: "https://example.com/project2"
     },
     {
@@ -65,7 +115,44 @@ const Index = () => {
       bio: "Creative designer with a passion for user-centered design. Focuses on creating intuitive and accessible interfaces for all users.",
       rank: "Junior",
       folder: "Design",
+      department: "MARKETING TEAM",
       projectUrl: "https://example.com/project3"
+    },
+    {
+      id: 4,
+      name: "Sarah Williams",
+      discordImage: "https://cdn.discordapp.com/avatars/567891234/default.png",
+      role: "System Administrator",
+      project: "Server Security",
+      bio: "Dedicated to maintaining system integrity and security. Expert in Linux systems and network administration.",
+      rank: "Senior",
+      folder: "IT",
+      department: "SYSTEM ADMIN",
+      projectUrl: "https://example.com/project4"
+    },
+    {
+      id: 5,
+      name: "Michael Chen",
+      discordImage: "https://cdn.discordapp.com/avatars/678912345/default.png",
+      role: "DevOps Engineer",
+      project: "CI/CD Pipeline",
+      bio: "Focused on automating development workflows and improving deployment processes. Skilled in Docker and Kubernetes.",
+      rank: "Lead",
+      folder: "Operations",
+      department: "SYSTEM ADMINS",
+      projectUrl: "https://example.com/project5"
+    },
+    {
+      id: 6,
+      name: "Emma Davis",
+      discordImage: "https://cdn.discordapp.com/avatars/789123456/default.png",
+      role: "Community Manager",
+      project: "User Engagement",
+      bio: "Passionate about building strong communities and fostering positive user relationships. Expert in social media management.",
+      rank: "Junior",
+      folder: "Support",
+      department: "ALL STAFF",
+      projectUrl: "https://example.com/project6"
     }
   ]);
 
@@ -84,13 +171,17 @@ const Index = () => {
     bio: "",
     rank: "",
     folder: "General",
+    department: "ALL STAFF" as StaffMember["department"],
     projectUrl: ""
   });
 
   // State for folder management
-  const [folders, setFolders] = useState<string[]>(["General", "Development", "Design", "Marketing"]);
+  const [folders, setFolders] = useState<string[]>(["General", "Development", "Design", "Marketing", "Support", "IT", "Operations"]);
   const [newFolder, setNewFolder] = useState("");
   const [selectedFolder, setSelectedFolder] = useState<string>("All");
+
+  // Department filter
+  const [selectedDepartment, setSelectedDepartment] = useState<string>("All");
 
   // Authentication dialog state
   const [showAuthDialog, setShowAuthDialog] = useState(false);
@@ -104,10 +195,22 @@ const Index = () => {
     return Array.from(folderSet);
   };
 
-  // Filter staff by folder
-  const filteredStaff = selectedFolder === "All" 
-    ? staff 
-    : staff.filter(member => member.folder === selectedFolder);
+  // Define the departments in the exact order requested
+  const departmentOrder = [
+    "SUPPORT TEAM",
+    "BUG HUNTERS",
+    "SYSTEM ADMIN",
+    "MARKETING TEAM",
+    "SYSTEM ADMINS",
+    "ALL STAFF"
+  ];
+
+  // Filter staff by folder and department
+  const filteredStaff = staff.filter(member => {
+    const folderMatch = selectedFolder === "All" || member.folder === selectedFolder;
+    const departmentMatch = selectedDepartment === "All" || member.department === selectedDepartment;
+    return folderMatch && departmentMatch;
+  });
 
   // Toast notifications
   const { toast } = useToast();
@@ -125,6 +228,7 @@ const Index = () => {
         bio: "", 
         rank: "", 
         folder: "General",
+        department: "ALL STAFF",
         projectUrl: ""
       });
       
@@ -199,12 +303,26 @@ const Index = () => {
     localStorage.setItem("adminLoggedIn", admin.isLoggedIn.toString());
   }, [admin.isLoggedIn]);
 
+  // Group staff by department for displaying in sections
+  const staffByDepartment = departmentOrder.reduce((acc, department) => {
+    acc[department] = staff.filter(member => member.department === department);
+    return acc;
+  }, {} as Record<string, StaffMember[]>);
+
   return (
-    <div className="min-h-screen bg-gray-50 p-4 md:p-8">
+    <div className={`min-h-screen ${theme === 'dark' ? 'bg-gray-900 text-white' : 'bg-gray-50'} p-4 md:p-8 transition-colors duration-300`}>
       <Tabs defaultValue="staff" className="w-full max-w-6xl mx-auto">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
-          <h1 className="text-3xl font-bold text-gray-900 mb-4 md:mb-0">Staff Portfolio</h1>
+          <h1 className="text-3xl font-bold mb-4 md:mb-0">Staff Portfolio</h1>
           <div className="flex flex-wrap gap-2 items-center">
+            <div className="flex items-center space-x-2 mr-4">
+              <Sun size={20} className={theme === 'dark' ? 'text-gray-500' : 'text-yellow-500'} />
+              <Switch
+                checked={theme === 'dark'}
+                onCheckedChange={toggleTheme}
+              />
+              <Moon size={20} className={theme === 'dark' ? 'text-blue-400' : 'text-gray-500'} />
+            </div>
             <TabsList className="mr-2">
               <TabsTrigger value="staff" className="gap-2">
                 <Users size={16} />
@@ -261,72 +379,163 @@ const Index = () => {
 
         {/* Staff Directory Tab */}
         <TabsContent value="staff" className="animate-fade-in">
-          <div className="flex flex-wrap gap-4 mb-6">
-            <Button 
-              variant="outline" 
-              className={`gap-2 ${selectedFolder === "All" ? "bg-primary text-primary-foreground hover:bg-primary/90" : ""}`}
-              onClick={() => setSelectedFolder("All")}
-            >
-              All Staff
-            </Button>
-            {getUniqueFolders().map((folder) => (
+          <div className="text-center mb-10">
+            <h1 className="text-4xl font-bold tracking-tight mb-4">XENOHOST STAFF MEMBERS</h1>
+            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+              Meet our amazing team of talented individuals that make Xenohost possible.
+            </p>
+          </div>
+          
+          {/* Filtering Controls */}
+          <div className="mb-8">
+            <h2 className="text-lg font-medium mb-3">Filter by:</h2>
+            <div className="flex flex-wrap gap-4 mb-4">
               <Button 
-                key={folder} 
                 variant="outline" 
-                className={`gap-2 ${selectedFolder === folder ? "bg-primary text-primary-foreground hover:bg-primary/90" : ""}`}
-                onClick={() => setSelectedFolder(folder)}
+                className={`gap-2 ${selectedFolder === "All" ? "bg-primary text-primary-foreground hover:bg-primary/90" : ""}`}
+                onClick={() => setSelectedFolder("All")}
               >
-                {folder}
+                All Folders
               </Button>
-            ))}
+              {getUniqueFolders().map((folder) => (
+                <Button 
+                  key={folder} 
+                  variant="outline" 
+                  className={`gap-2 ${selectedFolder === folder ? "bg-primary text-primary-foreground hover:bg-primary/90" : ""}`}
+                  onClick={() => setSelectedFolder(folder)}
+                >
+                  {folder}
+                </Button>
+              ))}
+            </div>
+
+            <div className="flex flex-wrap gap-4">
+              <Button 
+                variant="outline" 
+                className={`gap-2 ${selectedDepartment === "All" ? "bg-primary text-primary-foreground hover:bg-primary/90" : ""}`}
+                onClick={() => setSelectedDepartment("All")}
+              >
+                All Departments
+              </Button>
+              {departmentOrder.map((department) => (
+                <Button 
+                  key={department} 
+                  variant="outline" 
+                  className={`gap-2 flex items-center ${selectedDepartment === department ? "bg-primary text-primary-foreground hover:bg-primary/90" : ""}`}
+                  onClick={() => setSelectedDepartment(department)}
+                >
+                  {getDepartmentIcon(department)}{department}
+                </Button>
+              ))}
+            </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredStaff.map((member) => (
-              <Card key={member.id} className="hover:shadow-lg transition-shadow overflow-hidden">
-                <div className="aspect-video w-full bg-gray-100 flex items-center justify-center overflow-hidden">
-                  <Avatar className="h-32 w-32">
-                    <AvatarImage src={member.discordImage} alt={member.name} className="object-cover" />
-                    <AvatarFallback className="text-2xl">{member.name[0]}</AvatarFallback>
-                  </Avatar>
+          {selectedDepartment === "All" ? (
+            // Display staff grouped by department in the specific order requested
+            departmentOrder.map((department) => {
+              const members = staffByDepartment[department] || [];
+              if (members.length === 0) return null;
+              
+              return (
+                <div key={department} className="mb-12">
+                  <div className="flex items-center mb-4">
+                    {getDepartmentIcon(department)}
+                    <h2 className="text-2xl font-bold">{department}:</h2>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {members.map((member) => (
+                      <Card key={member.id} className={`hover:shadow-lg transition-shadow overflow-hidden ${theme === 'dark' ? 'bg-gray-800 border-gray-700' : ''}`}>
+                        <div className="aspect-video w-full bg-gray-100 flex items-center justify-center overflow-hidden">
+                          <Avatar className="h-32 w-32">
+                            <AvatarImage src={member.discordImage} alt={member.name} className="object-cover" />
+                            <AvatarFallback className="text-2xl">{member.name[0]}</AvatarFallback>
+                          </Avatar>
+                        </div>
+                        <CardHeader>
+                          <div className="flex justify-between items-start">
+                            <CardTitle className="text-xl">{member.name}</CardTitle>
+                            <Badge variant="secondary" className="flex items-center gap-1">
+                              <Trophy size={12} />
+                              {member.rank}
+                            </Badge>
+                          </div>
+                          <div className="flex flex-col gap-1">
+                            <p className={`text-sm ${theme === 'dark' ? 'text-gray-300' : 'text-muted-foreground'} font-medium`}>{member.role}</p>
+                            <Badge>{member.folder}</Badge>
+                          </div>
+                        </CardHeader>
+                        <CardContent>
+                          <p className="text-sm mb-3"><strong>Project:</strong> {member.project}</p>
+                          <p className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-muted-foreground'}`}>{member.bio}</p>
+                        </CardContent>
+                        <CardFooter className="pt-2">
+                          {member.projectUrl && (
+                            <Button 
+                              variant="outline" 
+                              size="sm" 
+                              className="w-full gap-2"
+                              onClick={() => window.open(member.projectUrl, '_blank')}
+                            >
+                              <ExternalLink size={14} />
+                              View Project
+                            </Button>
+                          )}
+                        </CardFooter>
+                      </Card>
+                    ))}
+                  </div>
                 </div>
-                <CardHeader>
-                  <div className="flex justify-between items-start">
-                    <CardTitle className="text-xl">{member.name}</CardTitle>
-                    <Badge variant="secondary" className="flex items-center gap-1">
-                      <Trophy size={12} />
-                      {member.rank}
-                    </Badge>
+              );
+            })
+          ) : (
+            // Display filtered staff
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {filteredStaff.map((member) => (
+                <Card key={member.id} className={`hover:shadow-lg transition-shadow overflow-hidden ${theme === 'dark' ? 'bg-gray-800 border-gray-700' : ''}`}>
+                  <div className="aspect-video w-full bg-gray-100 flex items-center justify-center overflow-hidden">
+                    <Avatar className="h-32 w-32">
+                      <AvatarImage src={member.discordImage} alt={member.name} className="object-cover" />
+                      <AvatarFallback className="text-2xl">{member.name[0]}</AvatarFallback>
+                    </Avatar>
                   </div>
-                  <div className="flex flex-col gap-1">
-                    <p className="text-sm text-muted-foreground font-medium">{member.role}</p>
-                    <Badge>{member.folder}</Badge>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm mb-3"><strong>Project:</strong> {member.project}</p>
-                  <p className="text-sm text-muted-foreground">{member.bio}</p>
-                </CardContent>
-                <CardFooter className="pt-2">
-                  {member.projectUrl && (
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      className="w-full gap-2"
-                      onClick={() => window.open(member.projectUrl, '_blank')}
-                    >
-                      <ExternalLink size={14} />
-                      View Project
-                    </Button>
-                  )}
-                </CardFooter>
-              </Card>
-            ))}
-          </div>
+                  <CardHeader>
+                    <div className="flex justify-between items-start">
+                      <CardTitle className="text-xl">{member.name}</CardTitle>
+                      <Badge variant="secondary" className="flex items-center gap-1">
+                        <Trophy size={12} />
+                        {member.rank}
+                      </Badge>
+                    </div>
+                    <div className="flex flex-col gap-1">
+                      <p className={`text-sm ${theme === 'dark' ? 'text-gray-300' : 'text-muted-foreground'} font-medium`}>{member.role}</p>
+                      <Badge>{member.folder}</Badge>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-sm mb-3"><strong>Project:</strong> {member.project}</p>
+                    <p className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-muted-foreground'}`}>{member.bio}</p>
+                  </CardContent>
+                  <CardFooter className="pt-2">
+                    {member.projectUrl && (
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="w-full gap-2"
+                        onClick={() => window.open(member.projectUrl, '_blank')}
+                      >
+                        <ExternalLink size={14} />
+                        View Project
+                      </Button>
+                    )}
+                  </CardFooter>
+                </Card>
+              ))}
+            </div>
+          )}
 
           {filteredStaff.length === 0 && (
             <div className="text-center py-12">
-              <p className="text-muted-foreground">No staff members found in this folder.</p>
+              <p className="text-muted-foreground">No staff members found with the selected filters.</p>
             </div>
           )}
         </TabsContent>
@@ -334,7 +543,7 @@ const Index = () => {
         {/* Admin Panel Tab */}
         <TabsContent value="admin">
           {!admin.isLoggedIn ? (
-            <Card className="p-6">
+            <Card className={`p-6 ${theme === 'dark' ? 'bg-gray-800 border-gray-700' : ''}`}>
               <div className="flex flex-col items-center justify-center py-12 text-center">
                 <ShieldCheck size={48} className="text-muted-foreground mb-4" />
                 <h2 className="text-2xl font-bold mb-2">Admin Authentication Required</h2>
@@ -347,7 +556,7 @@ const Index = () => {
           ) : (
             <>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-                <Card>
+                <Card className={theme === 'dark' ? 'bg-gray-800 border-gray-700' : ''}>
                   <CardHeader>
                     <CardTitle className="text-lg">Staff Members</CardTitle>
                   </CardHeader>
@@ -356,16 +565,16 @@ const Index = () => {
                     <p className="text-sm text-muted-foreground">Total team members</p>
                   </CardContent>
                 </Card>
-                <Card>
+                <Card className={theme === 'dark' ? 'bg-gray-800 border-gray-700' : ''}>
                   <CardHeader>
                     <CardTitle className="text-lg">Departments</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="text-3xl font-bold">{getUniqueFolders().length}</div>
+                    <div className="text-3xl font-bold">{departmentOrder.length}</div>
                     <p className="text-sm text-muted-foreground">Active departments</p>
                   </CardContent>
                 </Card>
-                <Card>
+                <Card className={theme === 'dark' ? 'bg-gray-800 border-gray-700' : ''}>
                   <CardHeader>
                     <CardTitle className="text-lg">Projects</CardTitle>
                   </CardHeader>
@@ -380,7 +589,7 @@ const Index = () => {
 
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
                 {/* Add Staff Member Form */}
-                <Card>
+                <Card className={theme === 'dark' ? 'bg-gray-800 border-gray-700' : ''}>
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                       <PlusCircle size={18} />
@@ -393,35 +602,41 @@ const Index = () => {
                         placeholder="Name"
                         value={newMember.name}
                         onChange={(e) => setNewMember({ ...newMember, name: e.target.value })}
+                        className={theme === 'dark' ? 'bg-gray-700 border-gray-600' : ''}
                       />
                       <Input
                         placeholder="Discord Avatar URL"
                         value={newMember.discordImage}
                         onChange={(e) => setNewMember({ ...newMember, discordImage: e.target.value })}
+                        className={theme === 'dark' ? 'bg-gray-700 border-gray-600' : ''}
                       />
                       <Input
                         placeholder="Role (e.g. Developer)"
                         value={newMember.role}
                         onChange={(e) => setNewMember({ ...newMember, role: e.target.value })}
+                        className={theme === 'dark' ? 'bg-gray-700 border-gray-600' : ''}
                       />
                       <Input
                         placeholder="Project"
                         value={newMember.project}
                         onChange={(e) => setNewMember({ ...newMember, project: e.target.value })}
+                        className={theme === 'dark' ? 'bg-gray-700 border-gray-600' : ''}
                       />
                       <Input
                         placeholder="Rank in Xenohost"
                         value={newMember.rank}
                         onChange={(e) => setNewMember({ ...newMember, rank: e.target.value })}
+                        className={theme === 'dark' ? 'bg-gray-700 border-gray-600' : ''}
                       />
                       <Input
                         placeholder="Project URL"
                         value={newMember.projectUrl}
                         onChange={(e) => setNewMember({ ...newMember, projectUrl: e.target.value })}
+                        className={theme === 'dark' ? 'bg-gray-700 border-gray-600' : ''}
                       />
-                      <div className="md:col-span-2">
+                      <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4">
                         <select 
-                          className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
+                          className={`flex h-10 w-full rounded-md border px-3 py-2 text-base file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm ${theme === 'dark' ? 'bg-gray-700 border-gray-600 text-white' : 'border-input bg-background'}`}
                           value={newMember.folder}
                           onChange={(e) => setNewMember({ ...newMember, folder: e.target.value })}
                         >
@@ -429,12 +644,22 @@ const Index = () => {
                             <option key={folder} value={folder}>{folder}</option>
                           ))}
                         </select>
+                        
+                        <select 
+                          className={`flex h-10 w-full rounded-md border px-3 py-2 text-base file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm ${theme === 'dark' ? 'bg-gray-700 border-gray-600 text-white' : 'border-input bg-background'}`}
+                          value={newMember.department}
+                          onChange={(e) => setNewMember({ ...newMember, department: e.target.value as StaffMember["department"] })}
+                        >
+                          {departmentOrder.map(dept => (
+                            <option key={dept} value={dept}>{dept}</option>
+                          ))}
+                        </select>
                       </div>
                       <Input
                         placeholder="Bio"
                         value={newMember.bio}
                         onChange={(e) => setNewMember({ ...newMember, bio: e.target.value })}
-                        className="md:col-span-2"
+                        className={`md:col-span-2 ${theme === 'dark' ? 'bg-gray-700 border-gray-600' : ''}`}
                       />
                     </div>
                     <Button onClick={addStaffMember} className="w-full">
@@ -444,7 +669,7 @@ const Index = () => {
                 </Card>
 
                 {/* Add Department/Folder Form */}
-                <Card>
+                <Card className={theme === 'dark' ? 'bg-gray-800 border-gray-700' : ''}>
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                       <FolderPlus size={18} />
@@ -458,6 +683,7 @@ const Index = () => {
                           placeholder="New Department Name"
                           value={newFolder}
                           onChange={(e) => setNewFolder(e.target.value)}
+                          className={theme === 'dark' ? 'bg-gray-700 border-gray-600' : ''}
                         />
                         <Button onClick={addFolder} className="whitespace-nowrap">Add Department</Button>
                       </div>
@@ -478,14 +704,14 @@ const Index = () => {
               </div>
 
               {/* Staff Management List */}
-              <Card>
+              <Card className={theme === 'dark' ? 'bg-gray-800 border-gray-700' : ''}>
                 <CardHeader>
                   <CardTitle>Manage Staff Members</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="grid gap-4">
                     {staff.map((member) => (
-                      <Card key={member.id} className="overflow-hidden">
+                      <Card key={member.id} className={`overflow-hidden ${theme === 'dark' ? 'bg-gray-700 border-gray-600' : ''}`}>
                         <div className="flex items-center justify-between p-4">
                           <div className="flex items-center gap-4">
                             <Avatar>
@@ -496,7 +722,7 @@ const Index = () => {
                               <p className="font-medium">{member.name}</p>
                               <div className="flex items-center gap-2">
                                 <p className="text-sm text-muted-foreground">{member.role}</p>
-                                <Badge variant="outline" className="text-xs">{member.folder}</Badge>
+                                <Badge variant="outline" className="text-xs">{member.department}</Badge>
                               </div>
                             </div>
                           </div>
@@ -505,9 +731,9 @@ const Index = () => {
                               <SheetTrigger asChild>
                                 <Button variant="outline" size="sm">View Details</Button>
                               </SheetTrigger>
-                              <SheetContent>
+                              <SheetContent className={theme === 'dark' ? 'bg-gray-800 border-gray-700 text-white' : ''}>
                                 <SheetHeader>
-                                  <SheetTitle>Staff Member Details</SheetTitle>
+                                  <SheetTitle className={theme === 'dark' ? 'text-white' : ''}>Staff Member Details</SheetTitle>
                                 </SheetHeader>
                                 <div className="py-4">
                                   <div className="flex justify-center mb-4">
@@ -524,7 +750,7 @@ const Index = () => {
                                           <Trophy size={12} />
                                           {member.rank}
                                         </Badge>
-                                        <Badge>{member.folder}</Badge>
+                                        <Badge>{member.department}</Badge>
                                       </div>
                                     </div>
                                     <div>
