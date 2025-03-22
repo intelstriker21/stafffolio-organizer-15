@@ -23,5 +23,9 @@ export const hashPassword = (password: string): string => {
  */
 export const verifyPassword = (password: string, storedHash: string): boolean => {
   const hashedPassword = hashPassword(password);
+  console.log("Provided password:", password);
+  console.log("Hashed password:", hashedPassword);
+  console.log("Stored hash:", storedHash);
   return hashedPassword === storedHash;
 };
+
