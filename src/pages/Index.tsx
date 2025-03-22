@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -39,10 +38,10 @@ const getDepartmentIcon = (department: string) => {
       return <Bug size={18} className="mr-2" />;
     case "SYSTEM ADMIN":
       return <Server size={18} className="mr-2" />;
-    case "SYSTEM ADMINS":
-      return <ShieldAlert size={18} className="mr-2" />;
     case "MARKETING TEAM":
       return <Globe size={18} className="mr-2" />;
+    case "SYSTEM ADMINS":
+      return <ShieldAlert size={18} className="mr-2" />;
     case "ALL STAFF":
       return <UsersRound size={18} className="mr-2" />;
     default:
@@ -178,7 +177,6 @@ const Index = () => {
   // State for folder management
   const [folders, setFolders] = useState<string[]>(["General", "Development", "Design", "Marketing", "Support", "IT", "Operations"]);
   const [newFolder, setNewFolder] = useState("");
-  const [selectedFolder, setSelectedFolder] = useState<string>("All");
 
   // Department filter
   const [selectedDepartment, setSelectedDepartment] = useState<string>("All");
@@ -188,12 +186,8 @@ const Index = () => {
   const [loginPassword, setLoginPassword] = useState("");
   const [authError, setAuthError] = useState("");
 
-  // Get unique folders from staff members
-  const getUniqueFolders = () => {
-    const folderSet = new Set(folders);
-    staff.forEach(member => folderSet.add(member.folder));
-    return Array.from(folderSet);
-  };
+  // Toast notifications
+  const { toast } = useToast();
 
   // Define the departments in the exact order requested
   const departmentOrder = [
@@ -205,15 +199,11 @@ const Index = () => {
     "ALL STAFF"
   ];
 
-  // Filter staff by folder and department
+  // Filter staff by department
   const filteredStaff = staff.filter(member => {
-    const folderMatch = selectedFolder === "All" || member.folder === selectedFolder;
     const departmentMatch = selectedDepartment === "All" || member.department === selectedDepartment;
-    return folderMatch && departmentMatch;
+    return departmentMatch;
   });
-
-  // Toast notifications
-  const { toast } = useToast();
 
   // Add new staff member
   const addStaffMember = () => {
@@ -310,10 +300,10 @@ const Index = () => {
   }, {} as Record<string, StaffMember[]>);
 
   return (
-    <div className={`min-h-screen ${theme === 'dark' ? 'bg-gray-900 text-white' : 'bg-gray-50'} p-4 md:p-8 transition-colors duration-300`}>
+    <div className={`min-h-screen ${theme === 'dark' ? 'bg-gray-900 text-white' : 'bg-gray-50'} p-4 md:p-8 transition-colors duration-300 font-sans`}>
       <Tabs defaultValue="staff" className="w-full max-w-6xl mx-auto">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
-          <h1 className="text-3xl font-bold mb-4 md:mb-0">Staff Portfolio</h1>
+          <h1 className="text-3xl font-bold mb-4 md:mb-0 font-display">Staff Portfolio</h1>
           <div className="flex flex-wrap gap-2 items-center">
             <div className="flex items-center space-x-2 mr-4">
               <Sun size={20} className={theme === 'dark' ? 'text-gray-500' : 'text-yellow-500'} />
@@ -355,7 +345,7 @@ const Index = () => {
         <Dialog open={showAuthDialog} onOpenChange={setShowAuthDialog}>
           <DialogContent className="sm:max-w-md">
             <DialogHeader>
-              <DialogTitle>Admin Authentication Required</DialogTitle>
+              <DialogTitle className="font-display">Admin Authentication Required</DialogTitle>
             </DialogHeader>
             <div className="space-y-4 py-2">
               <div className="space-y-2">
@@ -380,36 +370,15 @@ const Index = () => {
         {/* Staff Directory Tab */}
         <TabsContent value="staff" className="animate-fade-in">
           <div className="text-center mb-10">
-            <h1 className="text-4xl font-bold tracking-tight mb-4">XENOHOST STAFF MEMBERS</h1>
+            <h1 className="text-4xl font-bold tracking-tight mb-4 font-display">XENOHOST STAFF MEMBERS</h1>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
               Meet our amazing team of talented individuals that make Xenohost possible.
             </p>
           </div>
           
-          {/* Filtering Controls */}
+          {/* Filtering Controls - Only Department filter */}
           <div className="mb-8">
-            <h2 className="text-lg font-medium mb-3">Filter by:</h2>
-            <div className="flex flex-wrap gap-4 mb-4">
-              <Button 
-                variant="outline" 
-                className={`gap-2 ${selectedFolder === "All" ? "bg-primary text-primary-foreground hover:bg-primary/90" : ""}`}
-                onClick={() => setSelectedFolder("All")}
-              >
-                All Folders
-              </Button>
-              {getUniqueFolders().map((folder) => (
-                <Button 
-                  key={folder} 
-                  variant="outline" 
-                  className={`gap-2 ${selectedFolder === folder ? "bg-primary text-primary-foreground hover:bg-primary/90" : ""}`}
-                  onClick={() => setSelectedFolder(folder)}
-                >
-                  {folder}
-                </Button>
-              ))}
-            </div>
-
-            <div className="flex flex-wrap gap-4">
+            <div className="flex flex-wrap gap-2">
               <Button 
                 variant="outline" 
                 className={`gap-2 ${selectedDepartment === "All" ? "bg-primary text-primary-foreground hover:bg-primary/90" : ""}`}
@@ -440,7 +409,7 @@ const Index = () => {
                 <div key={department} className="mb-12">
                   <div className="flex items-center mb-4">
                     {getDepartmentIcon(department)}
-                    <h2 className="text-2xl font-bold">{department}:</h2>
+                    <h2 className="text-2xl font-bold font-display">{department}:</h2>
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {members.map((member) => (
@@ -453,7 +422,7 @@ const Index = () => {
                         </div>
                         <CardHeader>
                           <div className="flex justify-between items-start">
-                            <CardTitle className="text-xl">{member.name}</CardTitle>
+                            <CardTitle className="text-xl font-display">{member.name}</CardTitle>
                             <Badge variant="secondary" className="flex items-center gap-1">
                               <Trophy size={12} />
                               {member.rank}
@@ -461,7 +430,6 @@ const Index = () => {
                           </div>
                           <div className="flex flex-col gap-1">
                             <p className={`text-sm ${theme === 'dark' ? 'text-gray-300' : 'text-muted-foreground'} font-medium`}>{member.role}</p>
-                            <Badge>{member.folder}</Badge>
                           </div>
                         </CardHeader>
                         <CardContent>
@@ -500,7 +468,7 @@ const Index = () => {
                   </div>
                   <CardHeader>
                     <div className="flex justify-between items-start">
-                      <CardTitle className="text-xl">{member.name}</CardTitle>
+                      <CardTitle className="text-xl font-display">{member.name}</CardTitle>
                       <Badge variant="secondary" className="flex items-center gap-1">
                         <Trophy size={12} />
                         {member.rank}
@@ -508,7 +476,6 @@ const Index = () => {
                     </div>
                     <div className="flex flex-col gap-1">
                       <p className={`text-sm ${theme === 'dark' ? 'text-gray-300' : 'text-muted-foreground'} font-medium`}>{member.role}</p>
-                      <Badge>{member.folder}</Badge>
                     </div>
                   </CardHeader>
                   <CardContent>
